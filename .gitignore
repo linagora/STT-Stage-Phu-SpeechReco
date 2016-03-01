@@ -1,2 +1,11 @@
 node_modules
 frontend/components
+backend/lib/kaldi-trunk
+build/
+corpus/
+target/
+upload_audio/
+upload_text/
+.bowerrc
+.gitignore
+.jshintrc

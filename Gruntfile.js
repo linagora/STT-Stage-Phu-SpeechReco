@@ -20,7 +20,7 @@ module.exports = function(grunt) {
         script: 'app.js',
         options: {
           env: {NODE_ENV: 'dev'},
-          ignore: ['.git', 'README.md', 'node_modules/**'],
+          ignore: ['.git', 'README.md', 'node_modules/**', 'backend/lib/kaldi-trunk/*'],
           watchedExtensions: ['js', 'jade'],
           callback: function (nodemon) {
             nodemon.on('log', function (event) {

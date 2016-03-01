@@ -2,7 +2,7 @@ html(ng-app="myApp")
     head
         meta(charset='utf8')
         base(href='/')
-        title Angular/Express Skel
+        title Recognition Speech Tool Test
         link(rel='stylesheet', href='/components/bootstrap/dist/css/bootstrap.css')
         link(rel='stylesheet', href='/css/app.css')
 
@@ -10,6 +10,10 @@ html(ng-app="myApp")
         script(src='/components/bootstrap/dist/js/bootstrap.js')
         script(src='/components/angular/angular.js')
         script(src='/components/angular-route/angular-route.js')
+        script(src='/components/recordrtc/RecordRTC.js')
+        script(src='/components/ng-file-upload/ng-file-upload.js')
+        script(src='/components/socket.io-client/socket.io.js')
+        script(src='/components/angular-socket-io/socket.js')
 
     body
         .navbar.navbar-default
@@ -20,10 +24,11 @@ html(ng-app="myApp")
                         span.icon-bar
                         span.icon-bar
                         span.icon-bar
-                    a.navbar-brand(href='#') Project name
+                        span.icon-bar
+                    a.navbar-brand(href='#') Home
                 .navbar-collapse.collapse
                     ul.nav.navbar-nav
-                        - var obj = { 'home':'Home', 'about':'About' }
+                        - var obj = { 'audiofile':'Audio', 'yourmicro':'Micro', 'corpus':'Corpus' }
                             - each val, key in obj
                                 - if (id == key)
                                     li.active

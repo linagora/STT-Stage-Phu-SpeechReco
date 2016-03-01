@@ -1,0 +1,14 @@
+br
+.btn.btn-default#transcribe-button(ng-click='requestAction()',disabled=false) Transcribe This Corpus
+&nbsp; &nbsp;
+.glyphicon.glyphicon-refresh.glyphicon-refresh-animate(ng-show='showIcon')
+br
+{{errorMsg}}
+br
+br
+p Results:
+br
+blockquote
+	#res
+	br
+{{average}}

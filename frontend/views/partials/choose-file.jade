@@ -1,0 +1,10 @@
+form(name='form')
+  p Choose your audio file to upload:
+  .btn.btn-default(ngf-select='upload($file)', ng-model='file', name='file', ngf-pattern="'audio/*'", ngf-accept="'audio/*'") Select Audio Input
+  &nbsp; &nbsp;
+  {{uploadAudioStatus}}
+form(name='form')
+  p Choose your text file to upload:
+  .btn.btn-default(ngf-select='upload($file)', ng-model='file', name='file', ngf-pattern="'text/plain'", ngf-accept="'text/plain'") Select Original Text
+  &nbsp; &nbsp;
+  {{uploadTextStatus}}

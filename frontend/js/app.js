@@ -7,20 +7,27 @@ angular.module('myApp', [
   'myApp.controllers',
   'myApp.filters',
   'myApp.services',
-  'myApp.directives'
+  'myApp.factories',
+  'myApp.directives',
+  'ngFileUpload',
+  'btford.socket-io'
 ]).
 config(function($routeProvider, $locationProvider) {
   $routeProvider.
-    when('/view1', {
-      templateUrl: 'partials/partial1',
-      controller: 'MyCtrl1'
+    when('/audiofile', {
+      templateUrl: 'partials/audioFilePartial',
+      controller: 'MyCtrl1' 
     }).
-    when('/view2', {
-      templateUrl: 'partials/partial2',
+    when('/yourmicro', {
+      templateUrl: 'partials/microPartial',
+      controller: 'MyCtrl2'
+    }).
+    when('/corpus', {
+      templateUrl: 'partials/corpusPartial',
       controller: 'MyCtrl2'
     }).
     otherwise({
-      redirectTo: '/view1'
+      templateUrl: 'partials/acceuilPartial'
     });
 
   $locationProvider.html5Mode(true);

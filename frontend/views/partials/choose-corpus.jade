@@ -1,0 +1,16 @@
+p Choose the corpus that you want: 
+
+div(ng-repeat="corpus in corpuses")
+	label
+		input(type="checkbox", name="chooseCorpus",value="{{corpus}}",ng-checked="selection.indexOf(corpus) > -1",ng-click="clearList(); chooseCorpusAction(corpus)")
+		&nbsp; {{corpus}} 
+	br
+.btn.btn-info.btn-xs(ng-click='makeCorpusGuide()') How to make corpus
+br
+div(ng-show = 'guide')
+	h5 If you do not have any corpus, you can make your own corpus by following steps:
+	h5 In the corpus folder, create the tree below
+	h5 (name-corpus)/(name-corpus).txt <-- this .txt file contains each line with format (audio-name).wav (space) (text-corresponding-name).txt
+	h5 (name-corpus)/wav-for-sphinx/ <-- put your audios that were converted for sphinx-4 here
+	h5 (name-corpus)/wav-for-kaldi/ <-- put your audios that were converted for kaldi here
+	h5 (name-corpus)/txt/ <-- put your texts here
