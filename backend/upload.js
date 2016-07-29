@@ -1,6 +1,6 @@
 'use strict';
 
-exports.uploadFile = function(req, res, next){
+exports.uploadFile = function(req, res){
   var datatype = req.params.datatype;
   var fileName = req.params.filename;
   console.log(fileName);
@@ -53,4 +53,42 @@ exports.uploadFile = function(req, res, next){
     res.end();  
   }
 };
+
+exports.uploadFiles = function(req,res){
+  req.pipe(req.busboy);
+  req.busboy.on('file', function (fieldname, file, filename) {
+    //Path where audio file will be uploaded
+    if (req.params.type === 'audiofiles'){  
+      var fs = require('fs-extra');       //File System - for file manipulation      
+      var fstream;
+      var dirUploadFolder = __dirname+'/../corpus/'+req.params.corpus+'/wav/';
+      console.log(dirUploadFolder);
+      fstream = fs.createWriteStream(dirUploadFolder+filename);
+      file.pipe(fstream);
+      fstream.on('close', function () {      
+        res.end();
+      });
+    }
+    if (req.params.type === 'textfiles'){
+      var fs = require('fs-extra');       //File System - for file manipulation
+      var fstream;
+      var dirUploadFolder = __dirname+'/../corpus/'+req.params.corpus+'/txt/';
+      fstream = fs.createWriteStream(dirUploadFolder+filename);
+      file.pipe(fstream);
+      fstream.on('close', function () {          
+        res.end();
+      });
+    }
+    if (req.params.type === 'keywordsfiles'){
+      var fs = require('fs-extra');       //File System - for file manipulation
+      var fstream;
+      var dirUploadFolder = __dirname+'/../corpus/'+req.params.corpus+'/keywords/';
+      fstream = fs.createWriteStream(dirUploadFolder+filename);
+      file.pipe(fstream);
+      fstream.on('close', function () {          
+        res.end();
+      });
+    }
+  });
+}
 

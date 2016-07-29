@@ -1,0 +1,31 @@
+p Create your corpus:
+form.navbar-form.navbar-left(ng-submit='submit(text)')
+	.form-group
+		input.form-control(ng-model="text",type="text",placeholder="Corpus name",required) 
+		&nbsp; &nbsp;
+		input.btn.btn-warning(type="submit") Submit
+		&nbsp; &nbsp;
+		{{msg}}
+br
+br
+div(ng-show='next')
+	br
+	text Make sure audio's name and corresponding text's name would be the same
+	br
+	br
+	.btn.btn-warning.btn-sm(ngf-select='uploadAudios($files)',ng-model='files',ngf-accept="'audio/*'",multiple="multiple") Select Audios
+	&nbsp; &nbsp;
+	.btn.btn-warning.btn-sm(ngf-select='uploadTexts($files)',ng-model='files',ngf-accept="'text/*'",multiple="multiple") Select Texts 
+	&nbsp; &nbsp;
+	.btn.btn-warning.btn-sm(ngf-select='uploadKeywords($files)',ng-model='files',ngf-accept="'text/*'",multiple="multiple") Select Keywords File
+	br
+	br
+	{{uploadAudioMsg}}
+	br
+	{{uploadTextMsg}}
+	br
+	{{uploadKeywordsMsg}}
+	br
+	.pull-left {{doneMsg}}
+	.btn.btn-success.pull-right(ng-click="done()") Done
+	br

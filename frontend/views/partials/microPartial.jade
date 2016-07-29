@@ -1,10 +1,19 @@
 h2 Transcribe Your Recorded Audio
 br
-audio-record
 br
-choose-tool
-br
-br
-convert-audio
+div(ng-controller='tabController')
+	ul.nav.nav-pills
+		li(ng-class='{active:isSet(1)}')
+			a(,ng-click="setTab(1)") Step 1
+		li(ng-class='{active:isSet(2)}') 
+			a(ng-click="setTab(2)") Step 2 
+		li(ng-class='{active:isSet(3)}') 
+			a(ng-click="setTab(3)") Step 3
+	div.cadre-type1(ng-show='isSet(1)')
+		choose-tool
+	div.cadre-type2(ng-show='isSet(2)')
+		audio-record
+	div.cadre-type2(ng-show='isSet(3)')
+		convert-audio
 br
 transcribe-micro

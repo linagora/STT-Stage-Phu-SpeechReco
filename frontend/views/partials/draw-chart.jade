@@ -1,0 +1,10 @@
+{{msgDiag}}
+div(ng-show='showDiag')
+	.row
+		.col-md-6
+			canvas#wr.chart.chart-bar(chart-data="dataWR",chart-labels="labels",chart-series="series",chart-colours="colors")
+		.col-md-6
+			canvas#time.chart.chart-bar(chart-data="dataTime",chart-labels="labelsTime",chart-series="series",chart-colours="colors")
+
+	
+	

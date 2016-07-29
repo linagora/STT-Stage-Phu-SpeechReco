@@ -5,3 +5,8 @@ wget http://kaldi-asr.org/downloads/build/2/sandbox/online/egs/fisher_english/s5
 mkdir -p nnet_a_gpu_online graph
 tar zxvf nnet_a_gpu_online.tar.gz -C nnet_a_gpu_online
 tar zxvf graph.tar.gz -C graph
+
+for x in $1/egs/online-nnet2/nnet_a_gpu_online/conf/*conf; do
+  cp $x $x.orig
+  sed s:/export/a09/dpovey/kaldi-clean/egs/fisher_english/s5/exp/nnet2_online/:$(pwd)/: < $x.orig > $x
+done

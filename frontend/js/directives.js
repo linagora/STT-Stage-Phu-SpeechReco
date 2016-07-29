@@ -1,7 +1,7 @@
 'use strict';
 
 /* Directives */
-angular.module('myApp.directives', []).
+angular.module('myApp.directives', ['chart.js']).
 	directive('appName', function(appname) {
 		return function(scope, elm, attrs) {
 		  elm.text(appname);
@@ -29,25 +29,33 @@ angular.module('myApp.directives', []).
 					this.className="";
 					this.innerHTML = "Drop your file here";
 					var uploadFile = e.dataTransfer.files[e.dataTransfer.files.length-1];
-					$scope.upload(uploadFile);					
+					$scope.uploadByDragging(uploadFile);					
 				}
 				//upload funtion uses the Upload object and upload methode of angular-file-upload
-				$scope.upload = function (file) {
-					$scope.uploadAudioStatus="";
-					$scope.uploadTextStatus="";
-					if (file.type === "audio/wav" && clientDistinct.getNameClient() === 'unknown'){
-			        	$scope.uploadAudioStatus=file.name+" was uploaded";
-			        	clientDistinct.setNameClient(getRandomString()+'.wav');
-			        }
-			        else if (file.type === "text/plain" && clientDistinct.getNameClient() === 'unknown'){
-			        	$scope.uploadTextStatus=file.name+" was uploaded";
-			        	clientDistinct.setNameClient(getRandomString()+'.txt');
+				$scope.uploadByDragging = function (file) {
+					$scope.convertMsg='';
+					console.log(clientDistinct.getNameClient());
+            		if (clientDistinct.getNameClient() === 'unknown'){
+            			clientDistinct.setNameClient(getRandomString());
             		}
-			        Upload.upload({
-			            url: 'upload/stream/'+clientDistinct.getNameClient(),
-			            method: 'POST',
-			            file: file
-			        });
+					if (file.type === "audio/wav"){
+			        	$scope.uploadAudioStatus=file.name+" was uploaded";
+			        	var filename = clientDistinct.getNameClient()+'.wav';
+			        	Upload.upload({
+				            url: 'upload/stream/'+filename,
+				            method: 'POST',
+				            file: file
+			        	});
+			        }
+			        else if (file.type === "text/plain"){
+			        	$scope.uploadTextStatus=file.name+" was uploaded";
+			        	var filename = clientDistinct.getNameClient()+'.txt';
+			        	Upload.upload({
+				            url: 'upload/stream/'+filename,
+				            method: 'POST',
+				            file: file
+			        	});
+            		}
 			    };
 			},
 		}
@@ -68,34 +76,55 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/choose-file',
-			controller: function($scope, Upload, clientDistinct){
+			controller: function($scope, Upload, clientDistinct, transcribeFile, toolSelectedFactory){
 				$scope.uploadAudioStatus="";
 				$scope.uploadTextStatus="";
 				var filename = "";
                 $scope.upload = function (file) {
-                	if(file !== null){
-                		if (clientDistinct.getNameClient() === 'unknown'){
-                			clientDistinct.setNameClient(getRandomString());
-                		}
-	                	if (file.type === "audio/wav"){
-				        	$scope.uploadAudioStatus=file.name+" was uploaded";
-				        	filename = clientDistinct.getNameClient()+'.wav';
-				        	Upload.upload({
-					            url: 'upload/stream/'+filename,
-					            method: 'POST',
-					            file: file
-				        	});
-				        }
-				        else if (file.type === "text/plain"){
-				        	$scope.uploadTextStatus=file.name+" was uploaded";
-				        	filename = clientDistinct.getNameClient()+'.txt';
-				        	Upload.upload({
-					            url: 'upload/stream/'+filename,
-					            method: 'POST',
-					            file: file
-				        	});
-	            		}
-				    }
+                	$scope.convertMsg='';
+	                if(file !== null){
+	                	if (toolSelectedFactory.getSelectedTool()[0] === 'Kaldi'){
+	                		if (clientDistinct.getNameClient() === 'unknown'){
+		                		clientDistinct.setNameClient(getRandomString());
+		                	}
+	                		if (file.type === "text/plain"){
+					        	$scope.uploadTextStatus=file.name+" was uploaded";
+					        	filename = clientDistinct.getNameClient()+'.txt';
+					        	Upload.upload({
+						            url: 'upload/stream/'+filename,
+						            method: 'POST',
+						            file: file
+					        	});
+		            		} else {
+		            			$scope.uploadAudioStatus=file.name+" was uploaded";
+	                			transcribeFile.setFile(file);
+		            		}
+	                	}
+	                	else{
+	                		console.log(clientDistinct.getNameClient());
+	                		if (clientDistinct.getNameClient() === 'unknown'){
+	                			clientDistinct.setNameClient(getRandomString());
+	                		}
+		                	if (file.type === "audio/wav"){
+					        	$scope.uploadAudioStatus=file.name+" was uploaded";
+					        	filename = clientDistinct.getNameClient()+'.wav';
+					        	Upload.upload({
+						            url: 'upload/stream/'+filename,
+						            method: 'POST',
+						            file: file
+					        	});
+					        }
+					        else if (file.type === "text/plain"){
+					        	$scope.uploadTextStatus=file.name+" was uploaded";
+					        	filename = clientDistinct.getNameClient()+'.txt';
+					        	Upload.upload({
+						            url: 'upload/stream/'+filename,
+						            method: 'POST',
+						            file: file
+					        	});
+		            		}
+					    }
+                	}
 			    }; 
 			}
 		}
@@ -116,38 +145,43 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'EA',
 			templateUrl: 'partials/choose-tool',
-			controller: function($scope, toolSelectedFactory){
-				$scope.chooseValue = 0;
-    			$scope.chooseTools = [{value:1,name:"Sphinx-4"},{value:2,name:"Kaldi"},{value:3,name:"pocketSphinx"}];
-    			//update choosen tool after choosing
-    			$scope.setValue = function(value){
-      				$scope.chooseValue = value;
-    			};
+			controller: function($scope, toolSelectedFactory, dataResult, seriesDraw){
+				var inputType = location.href.substr(location.href.lastIndexOf('/'));
+    			$scope.tools = ["Sphinx-4","Kaldi","GoogleApi"];
+    			toolSelectedFactory.clearList();
+    			$scope.selectionTool = toolSelectedFactory.getSelectedTool();
     			//update the tool variable and the link variable in toolSelectedFactory. 
     			//The transcribe directive will use the link variable to send request to server
     			$scope.setTool = function(tool){
-	      			toolSelectedFactory.setSelectedTool(tool);
-				};
-				//message show to user after choosing the tool
-				$scope.showMessage = function(){
-					switch ($scope.chooseValue) {
-			        	case 1 :
-			          		$scope.message = "Sphinx-4 toolkit was selected"
-			          		$scope.messageVisible = true;
-			          		break;
-			        	case 2 :
-			          		$scope.message = "Kaldi toolkit was selected"
-			          		$scope.messageVisible = true;
-			          		break;
-			          	case 3 :
-			          		$scope.message = "pocketSphinx toolkit was selected"
-			          		$scope.messageVisible = true;
-			          		break;
-			        	default:
-			          		$scope.selectedTool ="Please tell us which toolkit that you would like to use";
-			          		$scope.messageVisible = true;
-			          		break;
-		    			};
+    				switch (inputType) {
+    					case "/corpus":
+    						if (toolSelectedFactory.getSelectedTool().length === 0){
+    							seriesDraw.clearList();
+    						}
+	    					if (toolSelectedFactory.getSelectedTool().indexOf(tool) > -1){
+		    					toolSelectedFactory.rmSelectedTool(tool);
+		    					seriesDraw.rmSeries(tool);
+		    					$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+		    				}
+			      			else {
+			      				toolSelectedFactory.setSelectedTool(tool);
+			      				seriesDraw.setSeries(tool);
+			      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+			      			}
+			      			break;
+			      		case "/audiofile":
+			      			toolSelectedFactory.clearList();
+			      			toolSelectedFactory.setSelectedTool(tool);
+		      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+		      				break;
+		      			case "/yourmicro":
+			      			toolSelectedFactory.clearList();
+			      			toolSelectedFactory.setSelectedTool(tool);
+		      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+		      				break;
+		      			default:
+		      				break;
+    				};
 				};
 			}
 		}
@@ -157,7 +191,7 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/transcribe-audio',
-			controller: function($scope, $http, toolSelectedFactory, mySocket, clientDistinct){
+			controller: function($scope, $http, toolSelectedFactory, mySocket, clientDistinct,transcribeFile){
 				//scope.isShow decide show or hide the loading icon and the transcribe text part
 				//isShow = false => transcribe text part is showed and loading icon is hided
 				$scope.isShow = false;
@@ -174,9 +208,9 @@ angular.module('myApp.directives', []).
 					      display.innerHTML = "&bull; Compare text here : ";
 					      data.compareObject.forEach(function(part){
 					        // green for additions, red for deletions
-					        // white for common parts
+					        // black for common parts
 					        var color = part.added ? 'green' :
-					          part.removed ? 'red' : 'white';
+					          part.removed ? 'red' : 'black';
 					        var span = document.createElement('span');
 					        span.style.color = color;
 					        span.appendChild(document.createTextNode(part.value));
@@ -205,24 +239,22 @@ angular.module('myApp.directives', []).
 
 				//function executes when clicking transcribe button
 				$scope.transcribeRequest =function (){
+					var tool = toolSelectedFactory.getSelectedTool()[0];
 					//if tool is not choosen, just give the error msg and end
-					if (toolSelectedFactory.getSelectedTool()==='unknown') {
+					if (toolSelectedFactory.getSelectedTool()===[]) {
 						$scope.errorMessage = "Choose a toolkit before!";
 						return 0;
-					};
+					}; 
 					//if the toolkit is kaldi, create a socket to server
-					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
+					if (tool === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
 					//if the toolkit is sphinx-4, disconnect the socket
-					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+					if (tool === "Sphinx-4"){
 						mySocket.disconnect();
 						console.log('socket disconnected');
 					}
-					//reset all upload file status, convert status, error message
-					$scope.uploadAudioStatus="";
-					$scope.uploadTextStatus="";
-					$scope.convertMsg="";
+					//reset error message
 					$scope.errorMessage ="";
 					//disable the transcribe button to make sure client can not click it twice
 					transcribeButton.setAttribute("disabled", true);
@@ -233,21 +265,68 @@ angular.module('myApp.directives', []).
 					$scope.transcribedText = "";
 					$scope.originalText = "";
 					//send request to server
-					$http({
-				      method: 'GET',
-				      url: '/transcribe/'+toolSelectedFactory.getSelectedTool()+'/audio/'+clientDistinct.getNameClient()
-				    }).
-				    success(function(data, status, headers, config) {
-				      console.log('requete accepte');
-				      if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
-				      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
-				      }
-				    }).
-				    error(function(data, status, headers, config) {
-				      $scope.transcribedText = 'Error!';
-				      $scope.isShow = false;
-				      transcribeButton.removeAttribute("disabled");
-				    });
+					if (tool === 'Kaldi'){
+						var ws = new WebSocket("ws://localhost:8888/client/ws/speech");
+						var transFinal = "";
+						ws.onopen = function (event) {
+							console.info('open');
+							ws.send(transcribeFile.getFile()); 
+							ws.send("EOS");
+						};
+
+						ws.onclose = function (event) {
+							console.info('close');
+							console.log(transFinal)
+							//send transcribed text to server to receive compare text
+							$http({
+					      		method: 'POST',
+					      		url: '/transcribe/'+tool+'/audio/'+clientDistinct.getNameClient(),
+					      		data: {value: transFinal},
+					      		headers: { 'Content-Type': 'application/json' }
+						    }).
+						    success(function(data, status, headers, config) {
+						      	console.log('requete accepte');
+						      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
+						    }).
+						    error(function(data, status, headers, config) {
+						      	$scope.transcribedText = 'Error!';
+						      	transcribeButton.removeAttribute("disabled");
+						    });
+						};
+
+						ws.onerror = function (event) {
+							console.info('error');
+						};
+						var old="&bull; Transcribed text here: ";
+						ws.onmessage = function (event) {
+							var hyp = JSON.parse(event.data);
+							if (hyp.result != undefined){
+								var trans = hyp.result.hypotheses[0].transcript;
+								if (JSON.parse(event.data).result.final){
+									transFinal += trans+' ';
+									document.getElementById("transcribedText").innerHTML = old+trans+' ';
+									old = document.getElementById("transcribedText").innerHTML.toString();
+								}
+								else document.getElementById("transcribedText").innerHTML = old + trans;
+							}
+						}
+					} else {
+						$http({
+					      	method: 'GET',
+					      	url: '/transcribe/'+tool+'/audio/'+clientDistinct.getNameClient()
+					    }).
+					    success(function(data, status, headers, config) {
+					      	console.log('requete accepte');
+					      	if (tool === "Sphinx-4"){
+					      		mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					      	}
+					    }).
+					    error(function(data, status, headers, config) {
+					      	$scope.transcribedText = 'Error!';
+					      	$scope.isShow = false;
+					      	transcribeButton.removeAttribute("disabled");
+					    });
+					}
 				}	
 			},
 		}
@@ -257,6 +336,7 @@ angular.module('myApp.directives', []).
 			restrict: 'E',
 			templateUrl: 'partials/transcribe-micro',
 			controller: function($scope, $http, toolSelectedFactory, mySocket, clientDistinct){
+				var tool = toolSelectedFactory.getSelectedTool()[0];
 				//scope.isShow decide show or hide the loading icon and the transcribe text part
 				//isShow = false => transcribe text part is showed and loading icon is hided
 				$scope.isShow = false;
@@ -274,21 +354,19 @@ angular.module('myApp.directives', []).
 				//function executes when clicking transcribe button
 				$scope.transcribeRequest =function (){
 					//if tool is not choosen, just give the error msg and end
-					if (toolSelectedFactory.getSelectedTool()==='unknown') {
+					if (toolSelectedFactory.getSelectedTool()===[]) {
 						$scope.errorMessage = "Choose a toolkit before!";
 						return 0;
 					};
 					//if the toolkit is kaldi, create a socket to server
-					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
+					if (tool === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
 					//if the toolkit is sphinx-4, disconnect the socket
-					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+					if (tool === "Sphinx-4"){
 						mySocket.disconnect();
 					}
-					$scope.convertMsg='';
 					$scope.errorMessage="";
-
 					//disable the transcribe button to make sure client can not click it twice
 					transcribeButton.setAttribute("disabled", true);
 
@@ -298,18 +376,17 @@ angular.module('myApp.directives', []).
 					//sent request
 					$http({
 				      method: 'GET',
-				      url: '/transcribe/'+toolSelectedFactory.getSelectedTool()+'/micro/'+clientDistinct.getNameClient()
+				      url: '/transcribe/'+tool+'/micro/'+clientDistinct.getNameClient()
 				    }).
 				    success(function(data, status, headers, config) {
-						//take result when it's sent by res.json (sphinx4 case)
-				      	if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+				      	if (tool === "Sphinx-4"){
 					      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					    }
 				    }).
 				    error(function(data, status, headers, config) {
-				      $scope.transcribedText = 'Error!';
-				      $scope.isShow = false;
-				      transcribeButton.removeAttribute("disabled");
+				      	$scope.transcribedText = 'Error!';
+				      	$scope.isShow = false;
+				      	transcribeButton.removeAttribute("disabled");
 				    });
 				}
 			}
@@ -320,73 +397,224 @@ angular.module('myApp.directives', []).
 		return{
 			restrict:'E',
 			templateUrl: 'partials/audio-record',
-			controller: function($scope, $http, clientDistinct){
-				//get element in the template
+			controller: function($scope, $http, clientDistinct, toolSelectedFactory){
+				//configuration of the recorder
+				var RECORDER_WORKER_PATH = '../components/record/recorderWorker.js';
+				var recorder;
+				var audioContext;
+				// Initialized by startListening()
+				var ws;
+				var intervalKey;
+				var init = function() {
+					var audioSourceConstraints = {};
+					try {
+						window.AudioContext = window.AudioContext || window.webkitAudioContext;
+						navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+						window.URL = window.URL || window.webkitURL;
+						audioContext = new AudioContext();
+					} catch (e) {
+						// Firefox 24: TypeError: AudioContext is not a constructor
+						// Set media.webaudio.enabled = true (in about:config) to fix this.
+						console.log("Error initializing Web Audio browser: " + e);
+					}
+
+					if (navigator.getUserMedia) {
+						audioSourceConstraints.audio = true;
+						navigator.getUserMedia(audioSourceConstraints, startUserMedia, function(e) {
+							console.log("No live audio input in this browser: " + e);
+						});
+					} else {
+						console.log("No user media support");
+					}
+				}
+				// Private methods
+				function startUserMedia(stream) {
+					var input = audioContext.createMediaStreamSource(stream);
+					// make the analyser available in window context
+					window.userSpeechAnalyser = audioContext.createAnalyser();
+					input.connect(window.userSpeechAnalyser);
+
+					//config.rafCallback();
+
+					recorder = new Recorder(input, { workerPath : RECORDER_WORKER_PATH });
+					console.log('Recorder initialized');
+				}
+
+				var startListening = function() {
+					if (! recorder) {
+						console.log("Recorder undefined");
+						return;
+					}
+
+					try {
+						ws = createWebSocket();
+					} catch (e) {
+						console.log("No web socket support in this browser!");
+					}
+				}
+
+				// Stop listening, i.e. recording and sending of new input.
+				var stopListening = function() {
+					// Stop the regular sending of audio
+					clearInterval(intervalKey);
+					// Stop recording
+					if (recorder) {
+						recorder.stop();
+						console.log('Stopped recording');
+						// Push the remaining audio to the server
+						recorder.export16kMono(function(blob) {
+							socketSend(blob);
+							recorder.clear();
+						}, 'audio/x-raw');
+					} else {
+						console.log("Recorder undefined");
+					}
+				}
+
+				var createWebSocket = function(){
+					var old="&bull; Transcribed text here: ";
+					var ws = new WebSocket("ws://localhost:8888/client/ws/speech?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)S16LE,+channels=(int)1");
+					ws.onopen = function () {
+						intervalKey = setInterval(function() {
+							recorder.export16kMono(function(blob) {
+								socketSend(blob);
+							}, 'audio/x-raw');
+							req++;
+						}, 5000);
+						// Start recording
+						recorder.record();
+					};
+					ws.onclose = function () {
+						console.info('close');
+					};
+					ws.onerror = function () {
+						console.info('error');
+					};
+					ws.onmessage = function () {
+						var hyp = JSON.parse(event.data);
+						console.log(hyp);
+						messF++
+						if (hyp.result != undefined){
+							var trans = hyp.result.hypotheses[0].transcript;
+							if (JSON.parse(event.data).result.final){
+								document.getElementById("transcribedText").innerHTML = old+trans+' ';
+								old = document.getElementById("transcribedText").innerHTML.toString();
+							}
+							else document.getElementById("transcribedText").innerHTML = old + trans;
+						}
+					}
+					return ws;
+				}
+				var socketSend = function(item){
+					if (ws) {
+						var state = ws.readyState;
+						if (state===1) {
+							// If item is an audio blob
+							if (item instanceof Blob) {
+								if (item.size > 0) {
+									ws.send(item);
+									console.log('Send: blob: ' + item.type + ', ' + item.size + item);
+								} else {
+									console.log('Send: blob: ' + item.type + ', EMPTY');
+								}
+							// Otherwise it's the EOS tag (string)
+							} else {
+								ws.send(item);
+								console.log('Send tag: ' + item);
+							}
+						} else {
+							console.log('WebSocket: readyState!=1: ' + state + ": failed to send: " + item);
+						}
+					} else {
+						console.log('No web socket connection: failed to send: ' + item);
+					}
+				}
+				/*****************************************************************************************/
 				var startRecording = document.getElementById('start-recording');
 				var stopRecording = document.getElementById('stop-recording');
 				var audioPreview = document.getElementById('audio-preview');
 				var audio = document.querySelector('audio');
 				var recordAudio;
 				var audioRecordedFile;
+				var intervalSend;
+				var messF = 0;
+				var req = 0;
+				init();
 				//when stat recording
 				startRecording.onclick = function() {
-					startRecording.disabled = true;
-					document.getElementById('recordStatus').innerHTML="";
-					navigator.getUserMedia = ( navigator.getUserMedia ||
-                       navigator.webkitGetUserMedia ||
-                       navigator.mozGetUserMedia ||
-                       navigator.msGetUserMedia);
-					navigator.getUserMedia({
-				        	audio: true
-				    	}, 
-				    	function(stream) {
-				    		//Record RTC is an object in recordrtc component of angular
-				        	recordAudio = RecordRTC(stream, {
-				        	    bufferSize: 16384,
-								type: 'audio'
-				        	});
-				        	recordAudio.startRecording();
-				    	}, 
-				    	function(error) {
-            				alert(JSON.stringify(error));
-        				}	
-        			);
-      				stopRecording.disabled = false;			 	
+					messF = 0;
+					req = 0;
+					if (toolSelectedFactory.getSelectedTool()[0]==="Kaldi"){
+						startListening();
+						startRecording.disabled = true;
+	      				stopRecording.disabled = false;					
+					} else if(toolSelectedFactory.getSelectedTool()[0]==="Sphinx-4"){
+						startRecording.disabled = true;
+						document.getElementById('recordStatus').innerHTML="";
+						navigator.getUserMedia = ( navigator.getUserMedia ||
+	                       navigator.webkitGetUserMedia ||
+	                       navigator.mozGetUserMedia ||
+	                       navigator.msGetUserMedia);
+						navigator.getUserMedia({
+					        	audio: true
+					    	}, 
+					    	function(stream) {
+					    		//Record RTC is an object in recordrtc component of angular
+					        	recordAudio = RecordRTC(stream, {
+					        	    bufferSize: 16384,
+									type: 'audio'
+					        	});
+					        	recordAudio.startRecording();
+					    	}, 
+					    	function(error) {
+	            				alert(JSON.stringify(error));
+	        				}	
+	        			);
+	      				stopRecording.disabled = false;	
+					}
 				};
 				stopRecording.onclick = function() {
-					recordAudio.stopRecording(function() {
-        				recordAudio.getDataURL(function(audioDataURL) {
-            				//postFiles(audioDataURL);
-			                audioRecordedFile = {
-			            		type: 'audio/wav',
-			            		contents: audioDataURL
-			    			};
-			    			//play preview
-			    			audioPreview.src = audioDataURL;
-                    		audioPreview.play();
+					if (toolSelectedFactory.getSelectedTool()[0]==="Kaldi"){
+						socketSend('EOS');
+						stopListening();
+						console.log(req+'-'+messF);
+						stopRecording.disabled = true;
+					    startRecording.disabled = false;
+					} else if(toolSelectedFactory.getSelectedTool()[0]==="Sphinx-4"){
+						recordAudio.stopRecording(function() {
+	        				recordAudio.getDataURL(function(audioDataURL) {
+	            				//postFiles(audioDataURL);
+				                audioRecordedFile = {
+				            		type: 'audio/wav',
+				            		contents: audioDataURL
+				    			};
+				    			//play preview
+				    			audioPreview.src = audioDataURL;
+	                    		audioPreview.play();
 
-                    		//post file
-                    		clientDistinct.setNameClient(getRandomString());
-                    		$http({
-				      			method: 'POST',
-				      			url: '/upload/file/'+clientDistinct.getNameClient(),
-								data: JSON.stringify(audioRecordedFile)
-				    		}).
-                    		success(function(data, status, headers, config) {
-                    			console.log("sent ok");
-                    		}).
-                    		error(function(data, status, headers, config) {
-				      			console.log('Error!');
-				    		});
-				    		//clear button and update message after recording
-				    		stopRecording.disabled = true;
-				    		startRecording.disabled = false;
-				    		document.getElementById('recordStatus').innerHTML = "Your recording was saved on my server"+"<br>" 
-				    		+"Now, you could choose a toolkit and click transcribe button to transcribe it or listen to the preview above";
-		    			});
-    				});	
+	                    		//post file
+	                    		clientDistinct.setNameClient(getRandomString());
+	                    		$http({
+					      			method: 'POST',
+					      			url: '/upload/file/'+clientDistinct.getNameClient(),
+									data: JSON.stringify(audioRecordedFile)
+					    		}).
+	                    		success(function(data, status, headers, config) {
+	                    			console.log("sent ok");
+	                    		}).
+	                    		error(function(data, status, headers, config) {
+					      			console.log('Error!');
+					    		});
+					    		//clear button and update message after recording
+					    		stopRecording.disabled = true;
+					    		startRecording.disabled = false;
+					    		document.getElementById('recordStatus').innerHTML = "Your recording was saved on my server"+"<br>" 
+					    		+"Now, you could choose a toolkit and click transcribe button to transcribe it or listen to the preview above";
+			    			});
+	    				});
+					}
                 };
-    			//fonction create random name for each recorded audio file
+				//fonction create random name for each recorded audio file
 				function getRandomString() {
 	                if (window.crypto) {
 	                    var a = window.crypto.getRandomValues(new Uint32Array(3)),
@@ -396,8 +624,8 @@ angular.module('myApp.directives', []).
 	                } else {
 	                    return (Math.random() * new Date().getTime()).toString(36).replace( /\./g , '');
 	                }
-	            };			
-            }
+	            };
+	        }		
 		};
 	}).
 	directive('chooseInput',function(){
@@ -470,6 +698,7 @@ angular.module('myApp.directives', []).
 			templateUrl: 'partials/choose-corpus',
 			controller: function($scope,$http,choosedCorpus){
 				$scope.guide =false;
+				$scope.delMsg='';
 				$http({
 	      			method: 'GET',
 	      			url: '/getcorpus'
@@ -491,11 +720,37 @@ angular.module('myApp.directives', []).
 				};
 				//method to get selected corpus
 				$scope.chooseCorpusAction = function(corpus){
+					$scope.delMsg = '\''+corpus+'\' corpus was selected';
 					$scope.selection.push(corpus);
 					choosedCorpus.setCorpusName(corpus);
 				};
-				$scope.makeCorpusGuide=function(){
-					$scope.guide = !($scope.guide);
+				//delete corpus
+				$scope.delCorpus = function(){
+					$scope.delMsg='';
+					var corpusCible = $scope.selection.pop();
+					$http({
+	      				method: 'GET',
+	      				url: '/delcorpus/'+corpusCible
+		    		}).
+	        		success(function(data, status, headers, config) {
+	        			$scope.delMsg='\''+corpusCible+'\' was deleted';
+	        			$http({
+			      			method: 'GET',
+			      			url: '/getcorpus'
+			    		}).
+		        		success(function(data, status, headers, config) {
+							//list corpus
+							$scope.corpuses = data;
+							//selected corpus
+							$scope.selection = [];
+		        		}).
+		        		error(function(data, status, headers, config) {
+			      			console.log('Error!');
+		    			});
+	        		}).
+	        		error(function(data, status, headers, config) {
+		      			console.log('Error!');
+		    		});
 				}
 			}
 		}
@@ -504,7 +759,7 @@ angular.module('myApp.directives', []).
 		return {
 			restrict:'E',
 			templateUrl: 'partials/transcribe-corpus',
-			controller: function($scope,$http,toolSelectedFactory,choosedCorpus, mySocket){
+			controller: function($scope,$http,toolSelectedFactory,choosedCorpus, mySocket, dataResult, seriesDraw){
 				$scope.showIcon = false;
 				$scope.errorMsg;
 				$scope.average;
@@ -512,128 +767,295 @@ angular.module('myApp.directives', []).
 				var result = document.getElementById('res');
 				var werSum;
 				var numAudio;
-				var precisionSum;
 				var recallSum;
-				var fScoreSum;
+				var timeSum;
 				//take result if it's sent by socket (for kaldi case)
 				mySocket.on('send msg',function(data){	
+					mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					console.log('recoie un message from server');
 					numAudio += 1;
-					$scope.transcribedText = data.transcribedText;	
-					if (data.compareObject !== ""){
-						result.appendChild(document.createTextNode("- "));	
-						data.compareObject.forEach(function(part){
-							// green for additions, red for deletions
-							// white for common parts
-							var color = part.added ? 'green' :
-							part.removed ? 'red' : 'white';
-							var span = document.createElement('span');
-							span.style.color = color;
-							span.appendChild(document.createTextNode(part.value));	
-							if (part.removed) span.appendChild(document.createTextNode(' '));	
-							result.appendChild(span);
-						});
-						var br = document.createElement("br");
-						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
-						result.appendChild(info);
-						result.appendChild(br);
-						var str =  werSum+'+'+data.WER+'=';
-						werSum += parseFloat(data.WER);
-						console.log(str+werSum);
-						console.log(numAudio);
-						precisionSum += parseFloat(data.precision);
-						recallSum += parseFloat(data.recall);
-						fScoreSum += parseFloat(data.fScore);	
-					}
+					var br = document.createElement("br");
+					var info = document.createTextNode(toolSelectedFactory.getSelectedTool()[0]+' - Audio '+numAudio+' - WER: '+data.WER+', Recall: '+data.recall);
+					result.appendChild(info);
+					result.appendChild(br);
+					werSum += parseFloat(data.WER);
+					recallSum += parseFloat(data.recall);	
+					timeSum += parseFloat(data.timeExec);
+					
 				});	
 				mySocket.on('send last msg', function(data){
 					console.log('recoie dernier message from server');
 					numAudio += 1;
-					$scope.transcribedText = data.transcribedText;	
-					if (data.compareObject !== ""){
-						result.appendChild(document.createTextNode("- "));	
-						data.compareObject.forEach(function(part){
-							// green for additions, red for deletions
-							// white for common parts
-							var color = part.added ? 'green' :
-							part.removed ? 'red' : 'white';
-							var span = document.createElement('span');
-							span.style.color = color;
-							span.appendChild(document.createTextNode(part.value));	
-							if (part.removed) span.appendChild(document.createTextNode(' '));
-							result.appendChild(span);
-						});
-						var br = document.createElement("br");
-						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
-						result.appendChild(info);
-						var str =  werSum+'+'+data.WER+'=';
-						werSum += parseFloat(data.WER);
-						console.log(str+werSum);
-						console.log(numAudio);
-						precisionSum += parseFloat(data.precision);
-						recallSum += parseFloat(data.recall);
-						fScoreSum += parseFloat(data.fScore);
-					}
+					var info = document.createTextNode(toolSelectedFactory.getSelectedTool()[0]+' - Audio '+numAudio+' - WER: '+data.WER+', Recall: '+data.recall);
+					var br = document.createElement("br");
+					result.appendChild(info);
+					werSum += parseFloat(data.WER);
+					recallSum += parseFloat(data.recall);
+					timeSum += parseFloat(data.timeExec);
+					console.log(timeSum);
+					//average
 					var averageWer = werSum/parseFloat(numAudio);
-					var averagePrecision = precisionSum/parseFloat(numAudio);
 					var averageRecall = recallSum/parseFloat(numAudio);
-					var averageFScore = fScoreSum/parseFloat(numAudio);
-					$scope.average = 'Average: WER: '+averageWer.toFixed(3)
-									+'/Precision: '+averagePrecision.toFixed(3)
-									+'/Recall: '+averageRecall.toFixed(3)
-									+'/F-Score: '+averageFScore.toFixed(3);
+					dataResult.setValue(averageWer.toFixed(3)*100,
+										averageRecall.toFixed(3)*100,timeSum.toFixed(1));
+					$scope.showIcon = false;
+					toolSelectedFactory.rmSelectedTool(toolSelectedFactory.getSelectedTool()[0]);
+					console.log(toolSelectedFactory.getSelectedTool()[0] + 'length = '+toolSelectedFactory.getSelectedTool().length);
+					if (toolSelectedFactory.getSelectedTool().length !== 0){
+						result.appendChild(br);
+						$scope.requestAction();
+					} else {
+						transcribeButton.removeAttribute("disabled");
+					}
+				});
+
+				mySocket.on('error', function(data){
 					$scope.showIcon = false;
 					transcribeButton.removeAttribute("disabled");
+					$scope.errorMsg = data.toString();
 				});
+				//clear res
+				$scope.clearRes=function(){
+					document.getElementById('res').innerHTML="";
+					dataResult.clear(seriesDraw.getSeries().length);
+				}
+				
 				//function when click transcribe button
 				$scope.requestAction = function(){
 					werSum = 0;
 					numAudio = 0;
-					precisionSum = 0;
 					recallSum = 0;
-					fScoreSum = 0;
-					$scope.average ='';
-					//if the toolkit is sphinx-4, disconnect the socket
-					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+					timeSum = 0;
+					switch ((toolSelectedFactory.getSelectedTool()).length){
+					 	case 0:
+					 		$scope.errorMsg="Have you choosen a tool yet?";
+					 		break;
+					 	default:
+					    	var tool = toolSelectedFactory.getSelectedTool()[0];
+					 		//if the toolkit is sphinx-4, disconnect the socket
+							gestionSocket(tool);
+							//verify if error cases
+							if (choosedCorpus.getCorpusName() === "unknown"){
+								$scope.errorMsg="Have you choosen a corpus yet?";
+							}
+							else {
+								//disable the transcribe button to make sure client can not click it twice
+								transcribeButton.setAttribute("disabled", true);				
+								$scope.errorMsg="";
+								$scope.showIcon = true;
+								$http({
+					      			method: 'GET',
+					      			url: '/transcribecorpus/'+tool+'/'+choosedCorpus.getCorpusName(),
+					    		}).
+			            		success(function(data, status, headers, config) {
+			            			//request sent
+			            			console.log('transcribe corpus request sent');
+			            			//affichage de result
+			            			mySocket.connect('http://localhost:8080/',{'forceNew':true });
+			            		}).
+			            		error(function(data, status, headers, config) {
+			            			$scope.showIcon = false;
+			            			transcribeButton.removeAttribute("disabled");
+			            			console.log('transcribe corpus request error');
+					    		});
+					    	}
+					    	break;
+					};
+				};
+				function gestionSocket(tool){
+					if (tool === "Sphinx-4"){
 						mySocket.disconnect();
 					}
 					//if the toolkit is kal, connect the socket
-					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
+					else if (tool === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
-					//verify if error cases
-					if (choosedCorpus.getCorpusName() === "unknown"){
-						$scope.errorMsg="Have you choosen a corpus yet?";
-					}
-					else if (toolSelectedFactory.getSelectedTool() === ""){
-						$scope.errorMsg="Have you choosen a tool yet?";
-					}
-					else {
-						//disable the transcribe button to make sure client can not click it twice
-						transcribeButton.setAttribute("disabled", true);				
-						$scope.errorMsg="";
-						$scope.showIcon = true;
-						result.innerHTML="";
-						$http({
-			      			method: 'GET',
-			      			url: '/transcribecorpus/'+toolSelectedFactory.getSelectedTool()+'/'+choosedCorpus.getCorpusName(),
-			    		}).
-	            		success(function(data, status, headers, config) {
-	            			//request sent
-	            			console.log('transcribe corpus request sent');
-	            			//affichage de result
-	            			if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
-	            				mySocket.connect('http://localhost:8080/',{'forceNew':true });
-		            		}
+				}
+			}
+		}
+	}).
+	directive('createCorpus',function(){
+		return {
+			restrict:'E',
+			templateUrl: 'partials/create-corpus',
+			controller: function($scope,$http,Upload,corpusName){
+				$scope.next = false;
 
-	            		}).
-	            		error(function(data, status, headers, config) {
-	            			$scope.showIcon = false;
-	            			transcribeButton.removeAttribute("disabled");
-	            			console.log('transcribe corpus request error');
-			    		});
-			    	}
-				};
+				$scope.uploadAudios = function(files){
+					files.forEach(function(file){
+						Upload.upload({
+				            url: 'uploadfiles/audiofiles/'+corpusName.getName(),
+				            method: 'POST',
+				            file: file
+			        	});
+					})
+					console.log(corpusName.getName());
+					$scope.uploadAudioMsg = "Audios uploaded"
+				}
+				$scope.uploadTexts = function(files){
+					files.forEach(function(file){
+						Upload.upload({
+				            url: 'uploadfiles/textfiles/'+corpusName.getName(),
+				            method: 'POST',
+				            file: file
+			        	});
+					})
+					$scope.uploadTextMsg = "Texts uploaded"
+				}
+				$scope.uploadKeywords = function(files){
+					files.forEach(function(file){
+						Upload.upload({
+				            url: 'uploadfiles/keywordsfiles/'+corpusName.getName(),
+				            method: 'POST',
+				            file: file
+			        	});
+					})
+					$scope.uploadKeywordsMsg = "Keywords uploaded";
+				}
+				$scope.clearZone = function(){
+					$scope.next = false;
+					$scope.text = '';
+					$scope.msg = '';
+				}
+				$scope.submit = function() {
+					$scope.doneMsg = "";
+					corpusName.setName($scope.text);
+					console.log(corpusName.getName());	
+					$http({
+		      			method: 'GET',
+		      			url: '/createcorpus/'+corpusName.getName(),
+		    		}).
+            		success(function(data, status, headers, config) {
+            			$scope.msg = "Corpus name valid";
+            			$scope.next = true;
+            		}).
+            		error(function(data, status, headers, config) {
+            			$scope.msg = 'Error create corpus. Your corpus name is used. Choose another one';
+		    		});
+				}
+				$scope.done = function(){
+					$http({
+		      			method: 'GET',
+		      			url: '/addcontent/'+corpusName.getName(),
+		    		}).
+            		success(function(data, status, headers, config) {
+            			$scope.doneMsg = "Creating corpus successfully";
+            			$scope.uploadAudioMsg = '';
+            			$scope.uploadTextMsg = '';
+            			$scope.uploadKeywordsMsg = '';
+            			$scope.msg = '';
+            			$scope.text = '';
+            			$http({
+			      			method: 'GET',
+			      			url: '/getcorpus'
+			    		}).
+		        		success(function(data, status, headers, config) {
+							//list corpus
+							$scope.corpuses = data;
+							//selected corpus
+							$scope.selection = [];
+		        		}).
+		        		error(function(data, status, headers, config) {
+			      			console.log('Error!');
+		    			});
+            		}).
+            		error(function(data, status, headers, config) {
+            			$scope.msg = 'Error create corpus';
+		    		});
+				}
+			}
+		}
+	}).
+	directive('drawChart',function(){
+		return {
+			restrict:'E',
+			templateUrl: 'partials/draw-chart',
+			controller: function($scope,dataResult,toolSelectedFactory,seriesDraw){
+				$scope.showDiag = false;
+				$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
+				$scope.labels = ['WER', 'Recall'];
+				$scope.labelsTime = ['Time Exec'];
+				$scope.colors = 
+					[{ // Blue
+						fillColor: '#006699',
+						strokeColor: '#006699',
+						pointColor: '#006699',
+						pointStrokeColor: '#fff',
+						pointHighlightFill: '#fff',
+						pointHighlightStroke: '#006699'
+					},
+					{ // Red
+						fillColor: '#CC3333',
+						strokeColor: '#CC3333',
+						pointColor: '#CC3333',
+						pointStrokeColor: '#fff',
+						pointHighlightFill: '#fff',
+						pointHighlightStroke: '#CC3333'
+					},
+					{ // Black
+						fillColor: 'Black',
+						strokeColor: 'Black',
+						pointColor: 'Black',
+						pointStrokeColor: '#fff',
+						pointHighlightFill: '#fff',
+						pointHighlightStroke: 'Black'
+					}];
+
+				var chartInstancesTime, chartInstancesWer;
+				$scope.$on("create", function (event, chart) {
+					var canvas = chart.chart.canvas.id;
+				  	if (canvas==="wr"){
+				  		if(chartInstancesWer!==undefined){
+					  		chartInstancesWer.destroy();
+					  		chartInstancesWer = chart;
+					  	} else {
+					  		chartInstancesWer = chart;
+					  	}
+					}
+				  	if (canvas==="time"){
+				  		if(chartInstancesTime!==undefined){
+					  		chartInstancesTime.destroy();
+					  		chartInstancesTime = chart;
+					  	} else{
+					  		chartInstancesTime = chart;
+					  	} 
+				  	} 		
+				});
+
+				$scope.draw =function(){
+					if ($scope.series !== seriesDraw.getSeries())
+						$scope.series = seriesDraw.getSeries();
+					var data = dataResult.getValue();
+					console.log($scope.series);
+					if (!checkData(data)){
+						$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
+						$scope.showDiag = false;
+					}else{
+						applyData(data);
+					}
+
+					function checkData(data){
+						var check = true;
+						for(var i=0;i<$scope.series.length;i++){
+							if(!data[i].stat){
+								check = false;
+								break;
+							}
+						}
+						return check;
+					}
+					function applyData(data){
+						$scope.dataWR=[];
+						$scope.dataTime=[];
+						for(var i=0;i<$scope.series.length;i++){
+							var values = data[i].value;
+							$scope.msgDiag = "";
+							$scope.showDiag = true;
+							$scope.dataWR.push([values[0].toFixed(1), values[1].toFixed(1)]);
+							$scope.dataTime.push([values[2]]);
+						}
+					}
+				}			
 			}
 		}
 	})

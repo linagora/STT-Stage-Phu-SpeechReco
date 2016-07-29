@@ -15,10 +15,15 @@ angular.module('myApp.controllers', []).
       $scope.name = 'Error!';
     })
   }).
-  controller('MyCtrl1', function($scope) {
-    // write Ctrl here
-  }).
-  controller('MyCtrl2', function($scope) {
-    // write Ctrl here
-  })
+  controller('tabController', function($scope) {
+    $scope.tab = 1;
+
+    $scope.isSet = function(checkTab) {
+      return ($scope.tab === checkTab);
+    };
+
+    $scope.setTab = function(setTab) {
+      $scope.tab = setTab;
+    };
+  });
 

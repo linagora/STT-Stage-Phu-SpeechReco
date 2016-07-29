@@ -19,7 +19,7 @@ module.exports = function(grunt) {
       dev: {
         script: 'app.js',
         options: {
-          env: {NODE_ENV: 'dev'},
+          env: {NODE_ENV: 'dev', DEBUG: process.argv[3]},
           ignore: ['.git', 'README.md', 'node_modules/**', 'backend/lib/kaldi-trunk/*'],
           watchedExtensions: ['js', 'jade'],
           callback: function (nodemon) {

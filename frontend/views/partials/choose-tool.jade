@@ -1,3 +1,3 @@
-p And then, choose a toolkit:
-select.btn-primary(ng-model='toolSelected', ng-change='setValue(toolSelected.value); setTool(toolSelected.name);showMessage()', data-ng-options='chooseTool as chooseTool.name for chooseTool in chooseTools') 
-&nbsp; &nbsp; {{message}}
+p Choose a toolkit:
+div(ng-repeat="tool in tools")
+	md-checkbox(value="{{tool}}",ng-checked="selectionTool.indexOf(tool) > -1",ng-click="setTool(tool); updateSeries();") {{tool}}

@@ -5,8 +5,21 @@ html {
     min-height: 100%;
 }
 
+code {
+    font-size: 80%;
+}
+
+.side {
+    background-color: #ffdd99;
+}
+.main {
+    background-color: #fff7e6;
+}
+
 .container.bis{
-    padding-bottom: 50px;
+    width: 100%;
+    padding: 70px 80px 60px 80px;
+    position: relative;
 }
 
 .container .text-muted {
@@ -20,29 +33,18 @@ html {
     bottom: 0px;
     width: 100%;
     height: 60px;
-    background-color: #f5f5f5;
+    background-color: #F8F8F8;
 }
-
-code {
-    font-size: 80%;
-}
-
-body {
-    height: 100%;
-}
-
 #drop {
     position: relative;
-    top: 10px;
-    height: 30px;
-    border-radius: 2px;
-    line-height: 30px;
-    border: 2px black;
+    height: 100px;
+    border-radius: 5px;
+    padding-top: 35px; 
     text-align: center;
     font-size: 15px;
     font-family: sans-serif;
     color: black;
-    background-color:  #e67300;
+    background-color: #e67300;
 
 }
 
@@ -61,16 +63,24 @@ body {
     font-family: sans-serif;
 }
 
-blockquote{
+.cadre-type1{
     position: relative;
-    padding: 30px;  
-    color: black;
+    padding: 30px;
     text-align: left;
     font-size: 15px;
     font-family: sans-serif;
-    border-radius: 25px;
-    border: 2px solid black;
-    background-color: #999999;   
+    border-radius: 0px 10px 10px 10px;
+    background-color: #FFCC66;
+}
+
+.cadre-type2{
+    position: relative;
+    padding: 30px;
+    text-align: left;
+    font-size: 15px;
+    font-family: sans-serif;
+    border-radius: 10px 10px 10px 10px;
+    background-color: #FFCC66;
 }
 
 #align div{
@@ -95,3 +105,44 @@ blockquote{
     }
 }
 
+ul.nav li.active a, 
+ul.nav li.active a:hover,
+ul.nav li.active a:focus { 
+    color: black;
+    background-color: #FFCC66; 
+    border-radius: 10px 10px 0px 0px;
+}
+
+.nav li a{
+    color: #990033;
+}
+
+.nav li a:hover,
+.nav li a:focus {
+    color: #990033;
+    border-radius: 10px 10px 0px 0px;
+    background-color: #FFCC99;
+}
+
+.md-toolbar-tools{
+    font-weight: 300;
+    text-align: left;
+    font-size: 15px;
+    font-family: sans-serif;
+}
+.md-button:not([disabled]):hover {
+    text-align: left;
+    font-size: 20px;
+    font-family: sans-serif;
+    font-weight: 500;
+    color: black;
+    transition: 0.3s;
+}
+.md-button:not([disabled]):focus {
+    text-align: left;
+    font-size: 20px;
+    font-family: sans-serif;
+    font-weight: 500;
+    background-color: #ffcc66;
+    color: black;
+}
