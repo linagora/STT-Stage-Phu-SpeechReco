@@ -1,14 +1,19 @@
 br
-.btn.btn-default#transcribe-button(ng-click='requestAction()',disabled=false) Transcribe This Corpus
+.btn.btn-success#transcribe-button(ng-click='requestAction(); clearRes();',disabled=false) Transcribe This Corpus
 &nbsp; &nbsp;
 .glyphicon.glyphicon-refresh.glyphicon-refresh-animate(ng-show='showIcon')
-br
+&nbsp; &nbsp;
 {{errorMsg}}
 br
 br
-p Results:
 br
-blockquote
-	#res
-	br
-{{average}}
+div(ng-controller='tabController')
+	ul.nav.nav-pills.nav-sm
+		li(ng-class='{active:isSet(2)}')
+			a(ng-click="setTab(2); draw();") Diagram
+		li(ng-class='{active:isSet(1)}') 
+			a(ng-click="setTab(1)") Results
+	div.cadre-type1(ng-show='isSet(2)')
+		draw-chart
+	div.cadre-type2(ng-show='isSet(1)')			
+		#res

@@ -9,7 +9,6 @@ exports.werCalcul = function(diffObject,orgText){
 	diffObject.forEach(function(part){
 		if (part.removed){
 			part.value.split(' ').forEach(function(a){
-				//console.log('removed:'+a+'/');
 				if(a!==''){
 					removed += 1;
 				}			
@@ -17,7 +16,6 @@ exports.werCalcul = function(diffObject,orgText){
 		}
 		if (part.added){
 			part.value.split(' ').forEach(function(a){
-				//console.log('added:'+a+'/');
 				if(a!==''){
 					added += 1;
 				}
@@ -40,66 +38,38 @@ exports.werCalcul = function(diffObject,orgText){
 		removed = removedBis;
 		added = 0;
 	}
-	//sum up in
+	//sum up n
 	orgText.split(' ').forEach(function(a){
 		if(a!==''){
 			N += 1;
 		}
 	});
-	console.log("For WER calcul");
-	console.log('removed = '+removed);
-	console.log('added = '+added);
-	console.log('subs = '+subs);
-	console.log('N = '+N);
 	var WER = (removed+added+subs)/N;
 	return WER.toFixed(3);
 }
 
-exports.precisionRecall = function(diffObject){
-	var added = 0;
-	var removed = 0;
-	var right = 0;
-	var N = 0;
-	//get removed and added words with diff
-	diffObject.forEach(function(part){
-		if (part.removed){
-			part.value.split(' ').forEach(function(a){
-				//console.log('removed:'+a+'/');
-				if(a!==''){
-					removed += 1;
-				}			
-			});
+exports.precisionRecall = function(result,keywords){
+	var truePositives = 0;
+	var resultLength = 0;
+	//cut off the no character words
+	result.forEach(function(mot){
+		if (mot !== '' && mot !== ' '){
+			resultLength += 1;
 		}
-		else if (part.added){
-			part.value.split(' ').forEach(function(a){
-				//console.log('added:'+a+'/');
-				if(a!==''){
-					added += 1;
-				}
-			});
+	})
+	//increment tp whenever a keyword is detected
+	keywords.forEach(function(keyword){
+		if (result.indexOf(keyword) > -1){
+			truePositives += 1;
 		}
-		else {
-			part.value.split(' ').forEach(function(a){
-				//console.log('right:'+a+'/');
-				if(a!==''){
-					right += 1;
-				}
-			})
-		}
-	});
-	//console.log("For precision-recall calcul");
-	//console.log('removed = '+removed);
-	//console.log('added = '+added);
-	//console.log('right = '+right);
-	//precision = tp/(tp+fp)
-	var precision = right/(right+added);
-	//recall = tp/(tp+fn)
-	var recall = right/(right+removed);
+	})
+	//recall = tp/tp+fp = tp/keywordsLength
+	var recall = truePositives/keywords.length;
+	//prec = tp/(tp+fn) = tp/kw dans result
+	//var prec = truePositives/resultLength;
 	//F1-score
-	var fScore = (2*precision*recall)/(precision+recall);
+	//var fScore = (2*precision*recall)/(precision+recall);
 	return {
-		Precision: precision.toFixed(3),
-		Recall: recall.toFixed(3),
-		FScore: fScore.toFixed(3)
+		recall: recall.toFixed(3)
 	}
 }

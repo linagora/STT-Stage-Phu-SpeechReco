@@ -4,6 +4,8 @@ html(ng-app="myApp")
         base(href='/')
         title Recognition Speech Tool Test
         link(rel='stylesheet', href='/components/bootstrap/dist/css/bootstrap.css')
+        link(rel='stylesheet', href='/components/angular-chart.js/dist/angular-chart.css')
+        link(rel='stylesheet', href='/components/angular-material/angular-material.css')
         link(rel='stylesheet', href='/css/app.css')
 
         script(src='/components/jquery/dist/jquery.min.js')
@@ -14,27 +16,24 @@ html(ng-app="myApp")
         script(src='/components/ng-file-upload/ng-file-upload.js')
         script(src='/components/socket.io-client/socket.io.js')
         script(src='/components/angular-socket-io/socket.js')
-
-    body
-        .navbar.navbar-default
-            .container
-                .navbar-header
-                    button.navbar-toggle(type='button', data-toggle='collapse', data-target='.navbar-collapse')
-                        span.sr-only Toggle navigation
-                        span.icon-bar
-                        span.icon-bar
-                        span.icon-bar
-                        span.icon-bar
-                    a.navbar-brand(href='#') Home
-                .navbar-collapse.collapse
-                    ul.nav.navbar-nav
-                        - var obj = { 'audiofile':'Audio', 'yourmicro':'Micro', 'corpus':'Corpus' }
-                            - each val, key in obj
-                                - if (id == key)
-                                    li.active
-                                        a(href='#{key}') #{val}
-                                - else
-                                    li
-                                        a(href='#{key}') #{val}
-        block body
-        include footer
+        script(src='/components/Chart.js/Chart.js')
+        script(src='/components/angular-chart.js/dist/angular-chart.js')
+        // Angular Material requires Angular.js Libraries
+        script(src='/components/angular-animate/angular-animate.js')
+        script(src='/components/angular-aria/angular-aria.js')
+        script(src='/components/angular-messages/angular-messages.js')
+        // Angular Material Library
+        script(src='/components/angular-material/angular-material.js')
+        //Record audio Library
+        script(src='/components/record/recorder.js')
+    body.docs-body.layout-row(layout="row")
+        md-content(flex="20")
+            md-toolbar
+                md-button.md-toolbar-tools(href="/") Home
+                md-button.md-toolbar-tools(href="/audiofile") Audio
+                md-button.md-toolbar-tools(href="/yourmicro") Micro
+                md-button.md-toolbar-tools(href="/corpus") Corpus
+        md-content.main(flex="80")
+            block body
+            include footer
+        

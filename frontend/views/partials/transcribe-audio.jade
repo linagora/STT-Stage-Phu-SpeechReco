@@ -1,14 +1,12 @@
 br
-.btn.btn-default#transcribe-button(ng-click='transcribeRequest()',disabled=false) Transcribe Your Audio
+.btn.btn-success#transcribe-button(ng-click='transcribeRequest()',disabled=false) Transcribe Your Audio
 &nbsp; &nbsp;
 .glyphicon.glyphicon-refresh.glyphicon-refresh-animate(ng-show='isShow')
 br
 {{errorMessage}}
 br
 br
-p Results:
-br
-blockquote
+.cadre-type2
 	#transcribedText &bull; Transcribed text here : {{transcribedText}}
 	br
 	#origialText &bull; Original text here : {{originalText}}

@@ -28,19 +28,7 @@ exports.convertAudio = function(req, res) {
                     console.log('convert ok');
                     fs.unlinkSync(audioFolder + '/' + audioName);
                     res.json({
-                        convertMsg: 'Convert ok!!',
-                    });
-                });
-            break;
-            case "Kaldi":
-                var exec = require('child_process').exec;
-                var cmd1 = 'cd '+audioFolder;
-                var cmd2 = 'sox '+audioName+' -c 1 -r 8000 -b 16 '+audioName+'-convertedforkaldi.wav';
-                exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-                    console.log('convert ok');
-                    fs.unlinkSync(audioFolder + '/' + audioName);
-                    res.json({
-                        convertMsg:'Convert ok!!'
+                        convertMsg: 'Audio was converted for Sphinx-4',
                     });
                 });
                 break;

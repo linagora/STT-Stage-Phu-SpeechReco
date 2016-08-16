@@ -8,76 +8,72 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	var corpusFolder = __dirname+'/../corpus/'+corpus+'/';
 	var audioFilesFolder = __dirname+'/../corpus/'+corpus+'/wav-for-sphinx/';
 	var textFilesFolder = __dirname+'/../corpus/'+corpus+'/txt/';
+	var keywordsFolder = __dirname+'/../corpus/'+corpus+'/keywords/';
 	var txtName;
 	var audioName;
+	var listAudio = [];
+	var listText =[];
+	var listKw =[];
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
 	var listResult = [];
-	var wersSum = 0;
-	var precisionSum = 0;
-	var recallSum = 0;
-	var fScoreSum = 0;
-	var numAudio = 0;
+	var time = 0;
 
-	var java = require('java');
-
+	analize();
 	/*java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
 	var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
 	var configuration = new Configuration();
 	configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
 	configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
 	configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");*/
-	function analize(i){
-	    var files = lines[i].toString().split(' ');
-    	txtName = files[1];
-    	audioName = files[0];
-    	console.log('Sphinx-4 transcribes file '+audioName+'>>>>>');
-		transcribeBySphinx(audioName,txtName,i);
+	function analize(){	    
+	    lines.forEach(function(line){
+	    	var files = line.toString().split(' ');
+	    	txtName = files[1];
+    		audioName = files[0];
+    		listAudio.push(audioFilesFolder+audioName);
+    		listText.push(textFilesFolder+txtName);
+    		listKw.push(keywordsFolder+txtName);
+	    });
+	    transcribeBySphinx(listAudio, listText, listKw);
 	};	
 
     //transcribe by sphinx function that give the transcribed text in outpout
-	function transcribeBySphinx(audioName,txtName,i,num){
-		if (num === undefined){
-			java.classpath.push(__dirname+'/lib/speechtotext.jar');
-			var S2T = java.import('AppTestSpeechReco');
-			var appSpeech = new S2T();
-			var result = appSpeech.transcribeSync(audioFilesFolder+audioName).replace(/\n/g," ");
-		}
-		else{
-			//Configuration			var FileInputStream = java.import("java.io.FileInputStream");
-			var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
-			var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
-			
-			var recognizer = new Recognizer(configuration);
-			var fileInputStream = new FileInputStream(audioFilesFolder+audioName);
-			recognizer.startRecognitionSync(fileInputStream);
-			var resultE;
-			while ((resultE = recognizer.getResultSync()) !== null) {
-				result= result + resultE.getHypothesisSync() + ' ';
-				console.log('result: '+resultE.getHypothesisSync());
-			}
-			recognizer.stopRecognitionSync();
-		}
-		console.log('trans:'+result);
+	function transcribeBySphinx(listAudio,listText,listKw){
+		var java = require('java');
+		java.classpath.push(__dirname+'/lib/speechtotext.jar');
+		var S2T = java.import('AppTestSpeechReco');
+		var appSpeech = new S2T();
+		var start = new Date().getTime();
+		var results = appSpeech.transcribeSync(listAudio);
+		console.log(results);
 		process.nextTick(function(){
-			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-			console.log('org: '+originalText);
-			var resultTable = result.split(' ');
-			var textTable = originalText.split(' ');
-	    	console.log('Sphinx-4 sends transcript of file '+audioName+'>>>>>');
-	    	listResult.push({
-	    		Text: textTable,
-	    		Result: resultTable
-	    	})
-	    	console.log('Sphinx-4 is done with '+audioName+'>>>>>');
-	    	if(i!==(lines.length-1)) analize(i+1);
-	    	else {
-	    		res.send(202);
-	    		setTimeout(simplifize(listResult,0),1000);	
-	    	}
+			res.send(202);
+			var end = new Date().getTime();
+			var timeExec = (end - start)/(1000*60);
+			console.log(timeExec);
+			for(var i=0;i<listAudio.length;i++){
+				var originalText = fs.readFileSync(listText[i],"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+				console.log('org: '+originalText);
+				console.log('result: '+results[i]);
+				var tm = require('text-miner');
+				var my_corpus = new tm.Corpus([results[i],originalText]).removeWords(tm.STOPWORDS.EN);
+				console.log('result after: '+my_corpus.documents[0]);
+				console.log('org after: '+my_corpus.documents[1]);
+				var resultTable = my_corpus.documents[0].split(' ');
+				var textTable = my_corpus.documents[0].split(' ');
+				var keywords = getKeywords(listKw[i]);
+		    	listResult.push({
+		    		Text: textTable,
+		    		Result: resultTable,
+		    		Keywords: keywords,
+		    		Time: timeExec
+			    })
+		    	if (i === (listAudio.length-1)) {
+		    		simplifize(listResult,0);	
+		    	}
+			}
 		});
-	};
-
-	analize(0);  
+	}; 
 };
 function simplifize(listResult,i){
 	var socket = require('./websocket.js').getSocket();
@@ -86,6 +82,8 @@ function simplifize(listResult,i){
 	var item = listResult[i];
 	var resultTable = item.Result;
 	var textTable = item.Text;
+	var time = item.Time;
+	console.log('time: '+item.Time);
 	//simplifize
 	lemmer.lemmatize(resultTable, function(err, transformResult){
 		var resultSimplifize='';
@@ -99,57 +97,58 @@ function simplifize(listResult,i){
 			});
 			var wer = calculs.werCalcul(campareText(resultSimplifize, textSimplifize),textSimplifize);
 			var campare = campareText(resultSimplifize, textSimplifize);
-			var precisionRecall = calculs.precisionRecall(campare);
-			setTimeout(function(){
+			var keywords =[];
+			item.Keywords.forEach(function(keyword){
+				if (keyword!==''&&keyword!==' '){
+					keywords.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(' ',''))
+				}
+			});
+			console.log(keywords);
+			//lemmatize keywords
+			lemmer.lemmatize(keywords, function(err, transformKeywords){
+				var precisionRecall = calculs.precisionRecall(resultSimplifize.split(' '), transformKeywords);
 				if (i !== (listResult.length-1)){
-					socket.emit('send msg',{
-						compareObject: campare,
-						WER: wer,
-						precision: precisionRecall.Precision,
-						recall: precisionRecall.Recall,
-						fScore: precisionRecall.FScore
-					});
-					console.log('send result');
-					simplifize(listResult,i+1);
+					if (i===0){
+						setTimeout(function(){
+							socket.emit('send msg',{
+								WER: wer,
+								recall: precisionRecall.recall,
+								timeExec: 0
+
+							});
+							console.log('send result');
+							simplifize(listResult,i+1);
+						},1000);
+					} else{
+						socket.emit('send msg',{
+							WER: wer,
+							recall: precisionRecall.recall,
+							timeExec: 0
+						});
+						console.log('send result');
+						simplifize(listResult,i+1);
+					}
 				}
 				else {
-					socket.emit('send last msg',{
-						compareObject: campare,
-						WER: wer,
-						precision: precisionRecall.Precision,
-						recall: precisionRecall.Recall,
-						fScore: precisionRecall.FScore
-					});
-					console.log('send result');
+					setTimeout(function(){
+						socket.emit('send last msg',{
+							WER: wer,
+							recall: precisionRecall.recall,
+							timeExec: time
+						});
+						console.log('send result');
+					},1000);
 				}
-			},1000);
+			});
 		});
 	});
 }
 
-
-//get the path of data necessary when it's an audio, recorded audio or text
-function getData(typeData, clientName){
+//get keywords
+function getKeywords (filePath){
 	var fs = require('fs-extra');
-	var filePath = 'error';
-	switch (typeData){
-		case "audio":
-			if (fs.existsSync(__dirname+'/../upload_audio/'+clientName+'.wav-convertedforsphinx.wav'))
-				filePath = __dirname+'/../upload_audio/'+clientName+'.wav-convertedforsphinx.wav';
-			break;
-		case "micro":
-			if (fs.existsSync(__dirname+'/../recorded_audio/'+clientName+'.wav-convertedforsphinx.wav'))
-				filePath = __dirname+'/../recorded_audio/'+clientName+'.wav-convertedforsphinx.wav';
-			break;
-		case "text":
-			if (fs.existsSync(__dirname+'/../upload_text/'+clientName+'.txt'))
-				filePath = __dirname+'/../upload_text/'+clientName+'.txt';
-			break;
-		default:
-			break;
-	};
-	return filePath;
-};
+	return fs.readFileSync(filePath).toString().split('\n');
+}
 
 //campare 2 strings and give to output the diff object that show the different btw 2 strings
 function campareText(cibleText, originalText){
