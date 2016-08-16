@@ -194,7 +194,7 @@ function sendRequest(file,callback) {
     fs.readFile(clip, function (err, data) {
       if (err) return done(err);
       request
-        .post('http://localhost:8888/client/dynamic/recognize')
+        .post('http://' + location.hostname + ':8888/client/dynamic/recognize')
         .type('audio/x-wav; rate=' + opts.sampleRate)
         .parse(request.parse.text)
         .send(data)
