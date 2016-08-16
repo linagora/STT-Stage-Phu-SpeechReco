@@ -13,7 +13,7 @@
   ],
   "dependencies": {
     "bootstrap": "~3.2.0",
-    "angular": "1.2.5",
+    "angular": "1.5.5",
     "angular-route": "~1.2.20",
     "ng-file-upload": "^11.2.3",
     "recordrtc": "^5.2.7",
@@ -21,5 +21,8 @@
     "socket.io-client": "^1.4.5",
     "angular-chart.js": "^0.8.8",
     "angular-material": "^1.0.6"
+  },
+  "resoltions": {
+	  "angular": "1.5.5"
   }
 }
