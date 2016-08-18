@@ -53,72 +53,72 @@ exports.transcribeSphinx = function(req, res) {
 	else {
 		console.log('commence');
 		createInput(clientName,audioFile);
-		//create input
-		function createInput(audioName,filePath){
-			fs.appendFile(audio_utt,audioName+' '+filePath, function (){
-				transcribeBySphinx(audio_utt, output, sendMsg);
-			});
-		}
-		function sendMsg(result){
-			//treat the client request
-			switch (selectedInput){ 
-				case 'audio':
-					if (textFile !== 'error'){ //text file is uploaded
-						var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
-						fs.unlinkSync(textFile);
-						fs.unlinkSync(audioFile);
-						console.log("sphinx-4 renvoie resultat");
-						console.log('resultat: '+result);
-						var resultTable = result.split(' ');
-						var textTable = originalText.split(' ');
-						lemmer.lemmatize(resultTable, function(err, transformResult){
-							var resultSimplifize='';
-							transformResult.forEach(function(word){
-								resultSimplifize+=word+' ';
-							});
-							lemmer.lemmatize(textTable, function(err, transformText){
-								var textSimplifize='';
-								transformText.forEach(function(word){
-									textSimplifize+=word+' ';
-								});
-								socket.emit('send msg audio', {
-									transcribedText: resultSimplifize,
-									compareObject: campareText(resultSimplifize, textSimplifize),
-									originalTextExport: textSimplifize,
-								});
-								console.log("sphinx-4 fini");
-							});
-						});	
-					}
-					else {//text file is NOT uploaded
-						var resultTable = result.split(' ');
-						lemmer.lemmatize(resultTable, function(err, transformResult){
-							var resultSimplifize='';
-							transformResult.forEach(function(word){
-								resultSimplifize+=word+' ';
-							});
-							socket.emit('send msg audio', {
-								transcribedText: resultSimplifize,
-								compareObject: "",
-								originalTextExport: "",
-							});
-						});		
-					}		
-					break;
-				case 'micro':
-					//fs.unlinkSync(audioFile);
-					console.log("Sphinx-4 renvoie resultat");
-					socket.emit('send msg micro',{
-						transcribedText: result
-					});
-					break;
-				default:
-					break;
-		    }
-		}
 	}
 }
 
+// create input
+function createInput(audioName,filePath){
+	fs.appendFile(audio_utt,audioName+' '+filePath, function (){
+		transcribeBySphinx(audio_utt, output, sendMsg);
+	});
+}
+function sendMsg(result){
+	//treat the client request
+	switch (selectedInput){
+		case 'audio':
+			if (textFile !== 'error'){ //text file is uploaded
+				var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+				fs.unlinkSync(textFile);
+				fs.unlinkSync(audioFile);
+				console.log("sphinx-4 renvoie resultat");
+				console.log('resultat: '+result);
+				var resultTable = result.split(' ');
+				var textTable = originalText.split(' ');
+				lemmer.lemmatize(resultTable, function(err, transformResult){
+					var resultSimplifize='';
+					transformResult.forEach(function(word){
+						resultSimplifize+=word+' ';
+					});
+					lemmer.lemmatize(textTable, function(err, transformText){
+						var textSimplifize='';
+						transformText.forEach(function(word){
+							textSimplifize+=word+' ';
+						});
+						socket.emit('send msg audio', {
+							transcribedText: resultSimplifize,
+							compareObject: campareText(resultSimplifize, textSimplifize),
+							originalTextExport: textSimplifize,
+						});
+						console.log("sphinx-4 fini");
+					});
+				});
+			}
+			else {//text file is NOT uploaded
+				var resultTable = result.split(' ');
+				lemmer.lemmatize(resultTable, function(err, transformResult){
+					var resultSimplifize='';
+					transformResult.forEach(function(word){
+						resultSimplifize+=word+' ';
+					});
+					socket.emit('send msg audio', {
+						transcribedText: resultSimplifize,
+						compareObject: "",
+						originalTextExport: "",
+					});
+				});
+			}
+			break;
+		case 'micro':
+			//fs.unlinkSync(audioFile);
+			console.log("Sphinx-4 renvoie resultat");
+			socket.emit('send msg micro',{
+				transcribedText: result
+			});
+			break;
+		default:
+			break;
+    }
+}
 
 //Transcribe by sphinx-4 function that give the transcribed text in output
 function transcribeBySphinx(input, output, callback){
