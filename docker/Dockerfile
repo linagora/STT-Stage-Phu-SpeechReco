@@ -9,7 +9,7 @@ RUN apt install -y cuda || true # we have some nonblocking errors here
 
 RUN ln -s /usr/bin/nodejs /usr/bin/node && ln -s -f /bin/bash /bin/sh
 
-RUN npm install -g npm@latest grunt-cli bower && easy_install http://closure-linter.googlecode.com/files/closure_linter-latest.tar.gz
+RUN npm install -g npm@latest grunt-cli bower && easy_install https://github.com/google/closure-linter/zipball/master
 
 # Clone required repositories
 
